@@ -22,6 +22,7 @@
 // use this:
 // fpm --force --prefix /opt --after-install post-install.sh -s dir -t deb -n safe_launcher --version 0.7.1 --architecture x86_64 --license GPLv3 --vendor MaidSafe --maintainer "MaidSafe Dev <dev@maidsafe.net>" --description "SAFE Launcher Installer" --url "http://maidsafe.net" maidsafe
 
+extern crate config_file_handler;
 extern crate unwrap;
 
 use std::fs::{self, File};
@@ -29,8 +30,54 @@ use std::io::{self, Write};
 use std::path::{Path, PathBuf};
 use std::process::Command;
 
+use config_file_handler::FileHandler;
+
 const PACKAGE_OUTER_DIR_NAME: &'static str = "maidsafe";
 const POST_INSTALL_SCRIPT_NAME: &'static str = "post_install.sh";
+
+macro_rules! t {
+    ($result:expr) => {
+        match $result {
+            Ok(v)  => v,
+            Err(e) => {
+                let decorator = ::std::iter::repeat('-').take(50).collect::<String>();
+                println!("\n {}\n| {:?}\n {}\n\n", decorator, e, decorator);
+                return err_code
+            },
+        }
+    }
+}
+
+
+#[derive(Debug, RustcDecodable, RustcEncodable, Clone)]
+struct Config {
+    output_dir: String,
+    demo_app_project_dir: Option<String>,
+    safe_launcher: Option<SafeLauncher>,
+}
+
+#[derive(Debug, RustcDecodable, RustcEncodable, Clone)]
+struct SafeDemoApp {
+    project_dir: String,
+}
+
+#[derive(Debug, RustcDecodable, RustcEncodable, Clone)]
+struct SafeLauncher {
+    launcher_project_dir: String,
+    log_toml_path: String,
+    crust_config_path: String,
+    safe_core: SafeCore,
+}
+
+#[derive(Debug, RustcDecodable, RustcEncodable, Clone)]
+struct SafeCore {
+    project_dir: String,
+    relative_target_dir: Option<String>,
+    use_nightly: bool,
+    clean: bool,
+    release_build: bool,
+    run_tests: bool,
+}
 
 fn get_input() -> String {
     let mut input = String::new();
@@ -55,6 +102,8 @@ fn source_dir_sanitiy_check<P: AsRef<Path>>(src: P) {
 
 fn main() {
     println!("\n\t================= Linux Package Creator =================\n");
+
+    let config: Config = x!(x!(FileHandler::<()>::open("linux-packager.config")).read_file());
 
     println!("Enter source path:");
     let src_path = PathBuf::from(get_input());
