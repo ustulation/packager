@@ -19,6 +19,9 @@
                                    option_unwrap_used))]#[macro_use]
 // -----------------------------------------------------------------------------------------------
 
+// use this:
+// fpm --force --prefix /opt --after-install post-install.sh -s dir -t deb -n safe_launcher --version 0.7.1 --architecture x86_64 --license GPLv3 --vendor MaidSafe --maintainer "MaidSafe Dev <dev@maidsafe.net>" --description "SAFE Launcher Installer" --url "http://maidsafe.net" maidsafe
+
 extern crate unwrap;
 
 use std::fs::{self, File};
@@ -43,8 +46,11 @@ fn source_dir_sanitiy_check<P: AsRef<Path>>(src: P) {
 
     let log_toml = src.as_ref().join("log.toml");
     let crust_config = src.as_ref().join("safe_launcher.crust.config");
+    print!("Checking if \"log.toml\" exists...");
     let _ = unwrap!(File::open(log_toml));
+    print!(" Ok\nChecking if \"safe_launcher.crust.config\" exists...");
     let _ = unwrap!(File::open(crust_config));
+    println!(" Ok");
 }
 
 fn main() {
@@ -83,7 +89,7 @@ fn main() {
 
     let post_install_script = dest_path.join(POST_INSTALL_SCRIPT_NAME);
     let mut fh = unwrap!(File::create(post_install_script));
-    unwrap!(fh.write_all(b"#!/bin/sh\nln -s /opt/maidsafe/safe_launcher/safe_launcher /usr/bin/safe_launcher"));
+    unwrap!(fh.write_all(b"#!/bin/sh\nln -fs /opt/maidsafe/safe_launcher/safe_launcher /usr/bin/safe_launcher"));
     unwrap!(fh.sync_all());
 
     println!("\nEnter package name:");
@@ -94,6 +100,7 @@ fn main() {
 
     status = unwrap!(Command::new("fpm")
         .current_dir(&dest_path)
+        .arg("--force")
         .args(&["--prefix", "/opt"])
         .args(&["--after-install", POST_INSTALL_SCRIPT_NAME])
         .args(&["-s", "dir"])
@@ -110,6 +117,7 @@ fn main() {
 
     status = unwrap!(Command::new("fpm")
         .current_dir(&dest_path)
+        .arg("--force")
         .args(&["--prefix", "/opt"])
         .args(&["--after-install", POST_INSTALL_SCRIPT_NAME])
         .args(&["-s", "dir"])
@@ -126,6 +134,7 @@ fn main() {
 
     status = unwrap!(Command::new("fpm")
         .current_dir(dest_path)
+        .arg("--force")
         .args(&["-s", "dir"])
         .args(&["-t", "tar"])
         .arg("-n")
