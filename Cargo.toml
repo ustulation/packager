@@ -1,11 +1,12 @@
 [package]
-author = ["Spandan Sharma <spandan.sharma@maidsafe.net>"]
+authors = ["Spandan Sharma <spandan.sharma@maidsafe.net>"]
 description = "Create linux packages for installation"
 license = "GPL-3.0"
 name = "linux-packager"
 version = "0.0.1"
 
 [dependencies]
+config_file_handler = "0.4.0"
 rustc-serialize = "~0.3.19"
 unwrap = "~1.1.0"
 
